@@ -1,0 +1,577 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sorting Algorithm Visualizer</title>
+<style>
+  :root {
+    --bg: #0f172a;
+    --panel: #16213e;
+    --grid: #24304f;
+    --text: #e8edf5;
+    --text-dim: #8fa0c2;
+    --compare: #f4a340;
+    --sorted: #4ade80;
+    --pivot: #f0554a;
+    --bar: #3a5a9c;
+    --border: #2b3a5f;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Segoe UI', Inter, system-ui, sans-serif;
+    min-height: 100vh;
+    background-image:
+      linear-gradient(var(--grid) 1px, transparent 1px),
+      linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+    background-size: 32px 32px;
+  }
+  .wrap {
+    max-width: 980px;
+    margin: 0 auto;
+    padding: 32px 20px 60px;
+  }
+  header {
+    margin-bottom: 24px;
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 20px;
+  }
+  h1 {
+    font-size: 28px;
+    margin: 0 0 6px;
+    letter-spacing: -0.02em;
+  }
+  header p {
+    color: var(--text-dim);
+    margin: 0;
+    font-size: 14px;
+    max-width: 60ch;
+  }
+  .controls {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 14px;
+    align-items: end;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 18px 20px;
+    margin-bottom: 22px;
+  }
+  .field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    font-size: 12px;
+    color: var(--text-dim);
+  }
+  select, input[type="range"] {
+    accent-color: var(--compare);
+  }
+  select {
+    background: var(--bg);
+    color: var(--text);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 7px 10px;
+    font-size: 13px;
+    font-family: monospace;
+  }
+  input[type="range"] { width: 130px; }
+  .btn-row { display: flex; gap: 8px; margin-left: auto; }
+  button {
+    background: var(--bar);
+    color: var(--text);
+    border: none;
+    border-radius: 6px;
+    padding: 9px 16px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.15s ease;
+  }
+  button:hover { background: #4a6cb5; }
+  button:disabled { opacity: 0.4; cursor: not-allowed; }
+  button.primary { background: var(--compare); color: #1a1200; }
+  button.primary:hover { background: #ffb75c; }
+
+  .stage {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 20px;
+  }
+  #canvas {
+    height: 340px;
+    display: flex;
+    align-items: flex-end;
+    gap: 3px;
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 4px;
+  }
+  .bar {
+    flex: 1;
+    background: var(--bar);
+    border-radius: 3px 3px 0 0;
+    transition: height 0.12s ease, background 0.12s ease;
+    position: relative;
+  }
+  .bar.compare { background: var(--compare); }
+  .bar.pivot { background: var(--pivot); }
+  .bar.sorted { background: var(--sorted); }
+
+  .meta-row {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 14px;
+    font-family: monospace;
+    font-size: 13px;
+    color: var(--text-dim);
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .meta-row span b { color: var(--text); }
+
+  .info {
+    margin-top: 22px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+  }
+  @media (max-width: 720px) {
+    .info { grid-template-columns: 1fr; }
+    .btn-row { margin-left: 0; width: 100%; }
+  }
+  .info .card {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px 18px;
+  }
+  .info .card h3 {
+    margin: 0 0 10px;
+    font-size: 13px;
+    text-transform: none;
+    color: var(--text-dim);
+    font-weight: 600;
+  }
+  .info .card p, .info .card ul {
+    margin: 0;
+    font-size: 13px;
+    line-height: 1.6;
+    color: var(--text);
+  }
+  .info .card ul { padding-left: 18px; }
+  pre#pseudo {
+    font-family: monospace;
+    font-size: 12.5px;
+    line-height: 1.7;
+    white-space: pre-wrap;
+    color: var(--text);
+    margin: 0;
+  }
+  .complexity-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+    margin-top: 6px;
+    font-family: monospace;
+    font-size: 12px;
+  }
+  .complexity-grid div {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 8px;
+    text-align: center;
+  }
+  .complexity-grid .label { color: var(--text-dim); font-size: 10px; margin-bottom: 4px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Sorting Algorithm Visualizer</h1>
+    <p>Watch how five classic sorting algorithms move through an array step by step. Pick an algorithm, adjust the array size and speed, and press play.</p>
+  </header>
+
+  <div class="controls">
+    <div class="field">
+      <label for="algo">Algorithm</label>
+      <select id="algo">
+        <option value="bubble">Bubble Sort</option>
+        <option value="selection">Selection Sort</option>
+        <option value="insertion">Insertion Sort</option>
+        <option value="merge">Merge Sort</option>
+        <option value="quick">Quick Sort</option>
+      </select>
+    </div>
+    <div class="field">
+      <label for="size">Array size: <span id="sizeVal">40</span></label>
+      <input type="range" id="size" min="10" max="100" value="40">
+    </div>
+    <div class="field">
+      <label for="speed">Speed: <span id="speedVal">5</span></label>
+      <input type="range" id="speed" min="1" max="10" value="5">
+    </div>
+    <div class="btn-row">
+      <button id="shuffleBtn">New Array</button>
+      <button id="playBtn" class="primary">Play</button>
+      <button id="resetBtn">Reset</button>
+    </div>
+  </div>
+
+  <div class="stage">
+    <div id="canvas"></div>
+    <div class="meta-row">
+      <span>Comparisons: <b id="cmpCount">0</b></span>
+      <span>Array accesses: <b id="accCount">0</b></span>
+      <span>Status: <b id="status">Ready</b></span>
+    </div>
+  </div>
+
+  <div class="info">
+    <div class="card">
+      <h3>How it works</h3>
+      <pre id="pseudo"></pre>
+    </div>
+    <div class="card">
+      <h3>Complexity</h3>
+      <div class="complexity-grid" id="complexity"></div>
+      <p style="margin-top:10px" id="notes"></p>
+    </div>
+  </div>
+</div>
+
+<script>
+// ---------- State ----------
+let array = [];
+let steps = [];
+let stepIndex = 0;
+let playing = false;
+let timer = null;
+let comparisons = 0;
+let accesses = 0;
+
+const canvas = document.getElementById('canvas');
+const algoSelect = document.getElementById('algo');
+const sizeSlider = document.getElementById('size');
+const speedSlider = document.getElementById('speed');
+const sizeVal = document.getElementById('sizeVal');
+const speedVal = document.getElementById('speedVal');
+const playBtn = document.getElementById('playBtn');
+const shuffleBtn = document.getElementById('shuffleBtn');
+const resetBtn = document.getElementById('resetBtn');
+const statusEl = document.getElementById('status');
+const cmpCountEl = document.getElementById('cmpCount');
+const accCountEl = document.getElementById('accCount');
+const pseudoEl = document.getElementById('pseudo');
+const complexityEl = document.getElementById('complexity');
+const notesEl = document.getElementById('notes');
+
+// ---------- Info content per algorithm ----------
+const INFO = {
+  bubble: {
+    pseudo: `for i in 0..n:
+  for j in 0..n-i-1:
+    if arr[j] > arr[j+1]:
+      swap(arr[j], arr[j+1])`,
+    complexity: { best: 'O(n)', avg: 'O(n\u00B2)', worst: 'O(n\u00B2)' },
+    notes: 'Repeatedly swaps adjacent out-of-order elements. Simple but slow on large inputs; mainly useful for teaching.'
+  },
+  selection: {
+    pseudo: `for i in 0..n:
+  min = i
+  for j in i+1..n:
+    if arr[j] < arr[min]:
+      min = j
+  swap(arr[i], arr[min])`,
+    complexity: { best: 'O(n\u00B2)', avg: 'O(n\u00B2)', worst: 'O(n\u00B2)' },
+    notes: 'Finds the minimum remaining element each pass and places it at the front. Always makes exactly n swaps.'
+  },
+  insertion: {
+    pseudo: `for i in 1..n:
+  key = arr[i]
+  j = i - 1
+  while j >= 0 and arr[j] > key:
+    arr[j+1] = arr[j]
+    j--
+  arr[j+1] = key`,
+    complexity: { best: 'O(n)', avg: 'O(n\u00B2)', worst: 'O(n\u00B2)' },
+    notes: 'Builds the sorted array one element at a time. Fast on nearly-sorted data, used inside hybrid sorts like Timsort.'
+  },
+  merge: {
+    pseudo: `mergeSort(arr):
+  if len(arr) <= 1: return arr
+  mid = len(arr) / 2
+  left = mergeSort(arr[:mid])
+  right = mergeSort(arr[mid:])
+  return merge(left, right)`,
+    complexity: { best: 'O(n log n)', avg: 'O(n log n)', worst: 'O(n log n)' },
+    notes: 'Divide and conquer: splits the array in half recursively, then merges sorted halves. Stable, needs O(n) extra space.'
+  },
+  quick: {
+    pseudo: `quickSort(arr, lo, hi):
+  if lo < hi:
+    p = partition(arr, lo, hi)
+    quickSort(arr, lo, p-1)
+    quickSort(arr, p+1, hi)`,
+    complexity: { best: 'O(n log n)', avg: 'O(n log n)', worst: 'O(n\u00B2)' },
+    notes: 'Picks a pivot, partitions elements around it, then recurses. Fast in practice; worst case hits on already-sorted input with a poor pivot choice.'
+  }
+};
+
+// ---------- Array generation ----------
+function generateArray(n) {
+  const arr = [];
+  for (let i = 0; i < n; i++) arr.push(Math.floor(Math.random() * 95) + 5);
+  return arr;
+}
+
+// ---------- Render ----------
+function render(state) {
+  const { arr, compare = [], pivot = [], sorted = [] } = state;
+  canvas.innerHTML = '';
+  const max = Math.max(...arr);
+  arr.forEach((val, i) => {
+    const bar = document.createElement('div');
+    bar.className = 'bar';
+    bar.style.height = (val / max * 100) + '%';
+    if (sorted.includes(i)) bar.classList.add('sorted');
+    else if (pivot.includes(i)) bar.classList.add('pivot');
+    else if (compare.includes(i)) bar.classList.add('compare');
+    canvas.appendChild(bar);
+  });
+}
+
+// ---------- Step recorder ----------
+// Each algorithm below runs on a COPY of the array and pushes snapshots
+// into `steps`, rather than sorting live. This is what makes the
+// step-by-step playback + speed control possible.
+function record(arr, compare = [], pivot = [], sorted = []) {
+  steps.push({ arr: arr.slice(), compare, pivot, sorted: sorted.slice() });
+}
+
+function bubbleSortSteps(input) {
+  const arr = input.slice();
+  const n = arr.length;
+  const sortedIdx = [];
+  for (let i = 0; i < n; i++) {
+    let swappedAny = false;
+    for (let j = 0; j < n - i - 1; j++) {
+      comparisons++;
+      record(arr, [j, j + 1], [], sortedIdx);
+      if (arr[j] > arr[j + 1]) {
+        [arr[j], arr[j + 1]] = [arr[j + 1], arr[j]];
+        accesses += 4;
+        swappedAny = true;
+        record(arr, [j, j + 1], [], sortedIdx);
+      }
+    }
+    sortedIdx.push(n - i - 1);
+    if (!swappedAny) break;
+  }
+  for (let i = 0; i < n; i++) if (!sortedIdx.includes(i)) sortedIdx.push(i);
+  record(arr, [], [], sortedIdx);
+}
+
+function selectionSortSteps(input) {
+  const arr = input.slice();
+  const n = arr.length;
+  const sortedIdx = [];
+  for (let i = 0; i < n; i++) {
+    let min = i;
+    for (let j = i + 1; j < n; j++) {
+      comparisons++;
+      record(arr, [j, min], [], sortedIdx);
+      if (arr[j] < arr[min]) min = j;
+    }
+    [arr[i], arr[min]] = [arr[min], arr[i]];
+    accesses += 4;
+    sortedIdx.push(i);
+    record(arr, [], [], sortedIdx);
+  }
+  record(arr, [], [], sortedIdx);
+}
+
+function insertionSortSteps(input) {
+  const arr = input.slice();
+  const n = arr.length;
+  for (let i = 1; i < n; i++) {
+    let key = arr[i];
+    let j = i - 1;
+    record(arr, [i], [], []);
+    while (j >= 0 && arr[j] > key) {
+      comparisons++;
+      arr[j + 1] = arr[j];
+      accesses += 2;
+      j--;
+      record(arr, [j + 1], [], []);
+    }
+    arr[j + 1] = key;
+    record(arr, [], [], []);
+  }
+  const allIdx = [...Array(n).keys()];
+  record(arr, [], [], allIdx);
+}
+
+function mergeSortSteps(input) {
+  const arr = input.slice();
+  function merge(lo, mid, hi) {
+    const left = arr.slice(lo, mid + 1);
+    const right = arr.slice(mid + 1, hi + 1);
+    let i = 0, j = 0, k = lo;
+    while (i < left.length && j < right.length) {
+      comparisons++;
+      record(arr, [k], [], []);
+      if (left[i] <= right[j]) { arr[k] = left[i]; i++; }
+      else { arr[k] = right[j]; j++; }
+      accesses++;
+      k++;
+      record(arr, [k - 1], [], []);
+    }
+    while (i < left.length) { arr[k] = left[i]; i++; k++; accesses++; record(arr, [k - 1], [], []); }
+    while (j < right.length) { arr[k] = right[j]; j++; k++; accesses++; record(arr, [k - 1], [], []); }
+  }
+  function sort(lo, hi) {
+    if (lo >= hi) return;
+    const mid = Math.floor((lo + hi) / 2);
+    sort(lo, mid);
+    sort(mid + 1, hi);
+    merge(lo, mid, hi);
+  }
+  sort(0, arr.length - 1);
+  const allIdx = [...Array(arr.length).keys()];
+  record(arr, [], [], allIdx);
+}
+
+function quickSortSteps(input) {
+  const arr = input.slice();
+  function partition(lo, hi) {
+    const pivotVal = arr[hi];
+    let i = lo - 1;
+    for (let j = lo; j < hi; j++) {
+      comparisons++;
+      record(arr, [j], [hi], []);
+      if (arr[j] < pivotVal) {
+        i++;
+        [arr[i], arr[j]] = [arr[j], arr[i]];
+        accesses += 4;
+        record(arr, [i, j], [hi], []);
+      }
+    }
+    [arr[i + 1], arr[hi]] = [arr[hi], arr[i + 1]];
+    accesses += 4;
+    record(arr, [], [i + 1], []);
+    return i + 1;
+  }
+  function sort(lo, hi) {
+    if (lo < hi) {
+      const p = partition(lo, hi);
+      sort(lo, p - 1);
+      sort(p + 1, hi);
+    }
+  }
+  sort(0, arr.length - 1);
+  const allIdx = [...Array(arr.length).keys()];
+  record(arr, [], [], allIdx);
+}
+
+const ALGORITHMS = {
+  bubble: bubbleSortSteps,
+  selection: selectionSortSteps,
+  insertion: insertionSortSteps,
+  merge: mergeSortSteps,
+  quick: quickSortSteps
+};
+
+// ---------- Playback control ----------
+function buildSteps() {
+  steps = [];
+  comparisons = 0;
+  accesses = 0;
+  record(array, [], [], []);
+  ALGORITHMS[algoSelect.value](array);
+  stepIndex = 0;
+}
+
+function showStep(i) {
+  if (!steps[i]) return;
+  render(steps[i]);
+  // recompute running comparisons/accesses is complex to do backward,
+  // so we just show live totals only when moving forward during play.
+}
+
+function tick() {
+  if (stepIndex >= steps.length - 1) {
+    pause();
+    statusEl.textContent = 'Done';
+    return;
+  }
+  stepIndex++;
+  showStep(stepIndex);
+  cmpCountEl.textContent = comparisons;
+  accCountEl.textContent = accesses;
+  const delay = 320 - (speedSlider.value * 30);
+  timer = setTimeout(tick, Math.max(delay, 10));
+}
+
+function play() {
+  if (stepIndex >= steps.length - 1) return;
+  playing = true;
+  playBtn.textContent = 'Pause';
+  statusEl.textContent = 'Sorting…';
+  tick();
+}
+
+function pause() {
+  playing = false;
+  playBtn.textContent = 'Play';
+  clearTimeout(timer);
+}
+
+function resetPlayback() {
+  pause();
+  buildSteps();
+  showStep(0);
+  cmpCountEl.textContent = 0;
+  accCountEl.textContent = 0;
+  statusEl.textContent = 'Ready';
+}
+
+function newArray() {
+  array = generateArray(parseInt(sizeSlider.value));
+  resetPlayback();
+}
+
+function updateInfoPanel() {
+  const info = INFO[algoSelect.value];
+  pseudoEl.textContent = info.pseudo;
+  complexityEl.innerHTML = `
+    <div><div class="label">Best</div>${info.complexity.best}</div>
+    <div><div class="label">Average</div>${info.complexity.avg}</div>
+    <div><div class="label">Worst</div>${info.complexity.worst}</div>
+  `;
+  notesEl.textContent = info.notes;
+}
+
+// ---------- Event wiring ----------
+sizeSlider.addEventListener('input', () => {
+  sizeVal.textContent = sizeSlider.value;
+});
+sizeSlider.addEventListener('change', newArray);
+speedSlider.addEventListener('input', () => { speedVal.textContent = speedSlider.value; });
+algoSelect.addEventListener('change', () => { updateInfoPanel(); resetPlayback(); });
+shuffleBtn.addEventListener('click', newArray);
+resetBtn.addEventListener('click', resetPlayback);
+playBtn.addEventListener('click', () => { playing ? pause() : play(); });
+
+// ---------- Init ----------
+updateInfoPanel();
+newArray();
+</script>
+</body>
+</html>
